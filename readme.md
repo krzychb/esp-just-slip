@@ -18,7 +18,7 @@ Testing of this application may be perfomed with sample h/w set up defined below
 
 ##Hardware
 * Arduino Pro Mini 3.3V
-* ESP-12E LoLin V3 with serial by wemos.cc
+* ESP-12E LoLin V3 with USB by wemos.cc
 * Two USB-UART generic dongles used to
   * monitor serial trafic received by ESP-12E
   * download Arduino and then monitor serial trafic received by Arduino
