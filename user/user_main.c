@@ -1,3 +1,34 @@
+/*
+* esp-just-slip - user_main.c
+*
+* Copyright (c) 2014-2015, Krzysztof Budzynski <krzychb at gazeta dot pl>
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+* * Redistributions of source code must retain the above copyright notice,
+* this list of conditions and the following disclaimer.
+* * Redistributions in binary form must reproduce the above copyright
+* notice, this list of conditions and the following disclaimer in the
+* documentation and/or other materials provided with the distribution.
+* * The name of Krzysztof Budzynski or krzychb may not be used
+* to endorse or promote products derived from this software without
+* specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include <ets_sys.h>
 #include <osapi.h>
 #include <os_type.h>
@@ -9,8 +40,15 @@
 #include "softuart.h"
 #include "justslip.h"
 
+//
+// comment define below if you would like to use Softuart
+//
+#define USE_HW_SERIAL
 
+#ifndef USE_HW_SERIAL
 Softuart softuart;
+#endif
+
 
 #define SLIP_BUFFER_SIZE 64
 static uint8_t inputBuffer[SLIP_BUFFER_SIZE];
@@ -50,7 +88,11 @@ void ICACHE_FLASH_ATTR sendDiagBuffer(void)
 		diagBuffer[4 + i] = * (uint8_t *) 0x3FF20E44;
 
 	uint8_t nCount = appendCrc16(diagBuffer, 4 + 8);
+#ifdef USE_HW_SERIAL
+	slipEncodeSerialUart0(diagBuffer, nCount);
+#else
 	slipEncodeSerial(&softuart, diagBuffer, nCount);
+#endif
 }
 
 
@@ -111,7 +153,11 @@ void ICACHE_FLASH_ATTR uart_read_cb(void *arg)
 {
 	uint8_t nCount;
 
+#ifdef USE_HW_SERIAL
+	nCount = slipDecodeSerialUart0(inputBuffer);
+#else
 	nCount = slipDecodeSerial(&softuart, inputBuffer);
+#endif
 	if (nCount > 0)
 		printDiagBuffer(inputBuffer, nCount);
 }
@@ -137,7 +183,12 @@ void ICACHE_FLASH_ATTR user_init(void)
 	// set bit rate for UART1 != 0 to direct output of os_printf() to UART1
 	// set bit rate for UART1 = 0 to direct output of os_printf() to UART0
 	//
+
+#ifdef USE_HW_SERIAL
+	uart_init(BIT_RATE_57600, BIT_RATE_115200);
+#else
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
+#endif
 
 	// enable os_printf() to go to the debug output of UART0 or UART1
 	system_set_os_print(1);
@@ -145,17 +196,19 @@ void ICACHE_FLASH_ATTR user_init(void)
 	os_printf("\r\n");
 	os_printf("ESP8255 Slip Transmit / Receive (esp-just-slip)\r\n");
 
+#ifndef USE_HW_SERIAL
 	// initialise software UART connected to GIPIO14 (Tx) and GPIO12 (Rx)
 	Softuart_SetPinRx(&softuart, 14);  // LoLin D5
 	Softuart_SetPinTx(&softuart, 12);  // LoLin D6
 	Softuart_Init(&softuart, 57600);
+#endif
 
-	// SoftUART reading
+	// UART reading
 	os_timer_disarm(&uart_read_timer);
 	os_timer_setfn(&uart_read_timer, (os_timer_func_t *)uart_read_cb, (void *)0);
 	os_timer_arm(&uart_read_timer, UART_READ_CB_TIME, 1);
 
-	// SoftUART writing
+	// UART writing
 	os_timer_disarm(&uart_send_timer);
 	os_timer_setfn(&uart_send_timer, (os_timer_func_t *)uart_send_cb, (void *)0);
 	os_timer_arm(&uart_send_timer, UART_SEND_CB_TIME, 1);

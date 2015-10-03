@@ -1,8 +1,45 @@
+/*
+* ino-just-slip - JustSlip.c
+*
+* Copyright (c) 2014-2015, Krzysztof Budzynski <krzychb at gazeta dot pl>
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+* * Redistributions of source code must retain the above copyright notice,
+* this list of conditions and the following disclaimer.
+* * Redistributions in binary form must reproduce the above copyright
+* notice, this list of conditions and the following disclaimer in the
+* documentation and/or other materials provided with the distribution.
+* * The name of Krzysztof Budzynski or krzychb may not be used
+* to endorse or promote products derived from this software without
+* specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*/
+
 //
-// SLIP_END - transmission END marker - SLIP data block should be ended with this marker
-// SLIP_ESC - SLIP escape character - this one will be placed just before a byte if it's value is either 0333 (0xdb) or 0300 (c0)
-// SLIP_ESC_END - placed in the data stream instead of the SLIP_END byte, preceded by a SLIP_ESC byte
-// SLIP_ESC_ESC - placed in the data stream instead of the SLIP_ESC byte, preceded by a SLIP_ESC byte
+// source https://en.wikipedia.org/wiki/Serial_Line_Internet_Protocol
+//
+// SLIP_END - Frame End - distinguishes datagram boundaries in the byte stream
+// SLIP_ESC - Frame Escape
+//
+// If the END byte occurs in the data to be sent, the two byte sequence ESC, ESC_END is sent instead
+// If the ESC byte occurs in the data, the two byte sequence ESC, ESC_ESC is sent.
+//
+// SLIP_ESC_END - Transposed Frame End
+// SLIP_ESC_ESC - Transposed Frame Escape
 //
 #define SLIP_END 0xC0
 #define SLIP_ESC 0xDB
@@ -23,9 +60,9 @@ uint8_t slipDecodeSerial(uint8_t *dataBuffer)
   static uint8_t previousDataByte = 0;
   static uint8_t nPos = 0;
 
-  while (espSerial.available())
+  while (Serial.available())
   {
-    dataByte = espSerial.read();
+    dataByte = Serial.read();
     if (dataByte == SLIP_END)
     {
       if (nPos > 0)
@@ -37,7 +74,7 @@ uint8_t slipDecodeSerial(uint8_t *dataBuffer)
       }
       else
       {
-        Serial.print("Orphan SLIP_END received!\n");
+        DiagUART.print("Orphan SLIP_END received!\n");
         return 0;
       }
     }
@@ -65,7 +102,7 @@ uint8_t slipDecodeSerial(uint8_t *dataBuffer)
       // purge buffer in case of overflow
       nPos = 0;
       previousDataByte = 0;
-      Serial.print("Input buffer purged because of overflow!\n");
+      DiagUART.print("Input buffer purged because of overflow!\n");
     }
   }
   return 0;
@@ -82,17 +119,17 @@ void slipEncodeSerial(uint8_t *dataBuffer, uint8_t nCount)
     switch (dataBuffer[i])
     {
       case SLIP_END:
-        espSerial.write(SLIP_ESC);
-        espSerial.write(SLIP_ESC_END);
+        Serial.write(SLIP_ESC);
+        Serial.write(SLIP_ESC_END);
         break;
       case SLIP_ESC:
-        espSerial.write(SLIP_ESC);
-        espSerial.write(SLIP_ESC_ESC);
+        Serial.write(SLIP_ESC);
+        Serial.write(SLIP_ESC_ESC);
         break;
       default:
-        espSerial.write(dataBuffer[i]);
+        Serial.write(dataBuffer[i]);
     }
-  espSerial.write(SLIP_END);
+  Serial.write(SLIP_END);
 }
 
 
@@ -106,9 +143,9 @@ uint8_t readKeyboard(uint8_t *dataBuffer)
   uint8_t dataByte;
   static uint8_t nPos = 0;
 
-  while (Serial.available())
+  while (DiagUART.available())
   {
-    dataByte = Serial.read();
+    dataByte = DiagUART.read();
     if (dataByte == '\r' || dataByte == '\n')
     {
       // process only non empty lines
@@ -126,7 +163,7 @@ uint8_t readKeyboard(uint8_t *dataBuffer)
       {
         // purge buffer in case of overflow
         nPos = 0;
-        Serial.print("Keyboard buffer purged because of overflow!\n");
+        DiagUART.print("Keyboard buffer purged because of overflow!\n");
       }
       else
       {
@@ -146,7 +183,7 @@ uint8_t appendCrc16(uint8_t *dataBuffer, uint8_t nCount)
 {
   if (nCount + 2 > SLIP_BUFFER_SIZE)
   {
-    Serial.print("Unable to add crc16 - buffer too small!\n");
+    DiagUART.print("Unable to add crc16 - buffer too small!\n");
     return 0;
   }
   unsigned short crc = crc16_data(dataBuffer, nCount, 0x00);
@@ -180,52 +217,27 @@ bool checkCrc16(uint8_t *dataBuffer, uint8_t nCount)
 
 void printBuffer(uint8_t *dataBuffer, uint8_t nCount)
 {
-  Serial.print("Rx ");
   for (uint8_t i = 0; i < nCount - 2; i++)
   {
-    Serial.print(byteToHex(&dataBuffer[i], 1, true));
-    Serial.print(" ");
+    if (dataBuffer[i] < 0x10)
+    {
+      DiagUART.print("0");
+      DiagUART.print(dataBuffer[i], HEX);
+    }
+    else
+    {
+      DiagUART.print(dataBuffer[i], HEX);
+    }
   }
-  Serial.print(": ");
+  DiagUART.print(": ");
   if (checkCrc16(dataBuffer, nCount))
   {
-    Serial.print("OK");
+    DiagUART.print("OK");
   }
   else
   {
-    Serial.print("Fail!");
+    DiagUART.print("Fail!");
   }
-  Serial.print("\n");
-}
-
-
-//
-// prints 8-bit data in hex with leading zeros
-// for uppercase set capslock to true
-// tempCharBuffer should be 2 x length + 1
-//
-static char tempCharBuffer[2 * 4 + 1];
-//
-char* byteToHex(uint8_t *data, uint8_t length, bool capslock)
-{
-  byte first;
-  byte caps = capslock ? (byte)7 : (byte)39;
-  int j = length * 2 - 1;
-  // required static char buffer
-  tempCharBuffer[length * 2] = '\0';
-
-  for (uint8_t i = 0; i < length; i++)
-  {
-    first = (data[i] & 0x0F) | 48;
-    if (first > 57) tempCharBuffer[j] = first + caps;
-    else tempCharBuffer[j] = first;
-    j--;
-
-    first = (data[i] >> 4) | 48;
-    if (first > 57) tempCharBuffer[j] = first + caps;
-    else tempCharBuffer[j] = first;
-    j--;
-  }
-  return tempCharBuffer;
+  DiagUART.print("\n");
 }
 

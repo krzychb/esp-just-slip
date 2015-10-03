@@ -92,6 +92,6 @@ typedef struct {
 
 void uart_init(UartBautRate uart0_br, UartBautRate uart1_br);
 ICACHE_FLASH_ATTR int uart0_rx_one_char();
-
+ICACHE_FLASH_ATTR uart0_tx_one_char(uint8 TxChar);
 #endif
 

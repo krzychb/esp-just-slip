@@ -3,7 +3,7 @@
  *
  * FileName: uart.c
  *
- * Description: Two UART mode configration and interrupt handler.
+ * Description: Two UART mode configuration and interrupt handler.
  *              Check your hardware connection while use this mode.
  *
  * Modification history:
@@ -67,11 +67,11 @@ uart_config(uint8 uart_no)
  * FunctionName : uart0_tx_one_char
  * Description  : Internal used function
  *                Use uart1 interface to transfer one char
- * Parameters   : uint8 uart - uart number
- * Returns      : OK
+ * Parameters   : char c - character to tx
+ * Returns      : NONE
 *******************************************************************************/
-LOCAL STATUS ICACHE_FLASH_ATTR
-uart0_tx_one_char( uint8 TxChar)
+ICACHE_FLASH_ATTR
+uart0_tx_one_char(uint8 TxChar)
 {
     while (true)
 	{
@@ -82,7 +82,6 @@ uart0_tx_one_char( uint8 TxChar)
 	}
 
 	WRITE_PERI_REG(UART_FIFO(UART0), TxChar);
-	return OK;
 }
 
 /******************************************************************************
@@ -108,11 +107,11 @@ uart0_write_char(char c)
  * FunctionName : uart1_tx_one_char
  * Description  : Internal used function
  *                Use uart1 interface to transfer one char
- * Parameters   : uint8 uart - uart number
- * Returns      : OK
+ * Parameters   : char c - character to tx
+ * Returns      : NONE
 *******************************************************************************/
-LOCAL STATUS ICACHE_FLASH_ATTR
-uart1_tx_one_char( uint8 TxChar)
+LOCAL ICACHE_FLASH_ATTR
+uart1_tx_one_char(uint8 TxChar)
 {
     while (true)
 	{
@@ -123,7 +122,6 @@ uart1_tx_one_char( uint8 TxChar)
 	}
 
 	WRITE_PERI_REG(UART_FIFO(UART1), TxChar);
-	return OK;
 }
 
 
@@ -156,7 +154,7 @@ uart1_write_char(char c)
 LOCAL void
 uart0_rx_intr_handler(void *para)
 {
-    /* uart0 and uart1 intr combine togther, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
+    /* uart0 and uart1 intr combine together, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
      * uart1 and uart0 respectively
      */
     RcvMsgBuff *pRxBuff = (RcvMsgBuff *)para;
@@ -212,7 +210,7 @@ int uart0_rx_one_char()
  * Description  : use uart0 to transfer buffer
  * Parameters   : uint8 *buf - point to send buffer
  *                uint16 len - buffer len
- * Returns      :
+ * Returns      : NONE
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
 uart0_tx_buffer(uint8 *buf, uint16 len)
