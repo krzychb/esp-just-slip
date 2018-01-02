@@ -1,23 +1,23 @@
-#esp-just-slip
+# esp-just-slip
 
 [SLIP (Serial Line Internet Protocol)](https://en.wikipedia.org/wiki/Serial_Line_Internet_Protocol) provides easy to implement method to encapsulate data packets sent over a serial connection. The esp-just-slip is an implementation of SLIP prepared for [ESP8266 SoC](http://espressif.com/en/products/esp8266/). It is provided as C module [justslip](justslip/) and includes verification of data integrity with [CRC16](https://en.wikipedia.org/wiki/Crc16). Sample implementation of this module is available in file [user_main.c](user/user_main.c) and demonstrates sending of data packets between arduino and ESP8266.
 
 
 
-##Implementation
+## Implementation
 
 esp-just-slip can set data using hardware UART0 serial or using software serial. Software serial provides flexibility which other pins to use for communication if UART0 is already used for other purposes. Software serial is implemented using [esp8266 software uart](https://github.com/plieningerweb/esp8266-software-uart) by [Andreas Plieninger](https://github.com/plieningerweb). To provide verification if data has been transmitted correctly [CRC16](https://en.wikipedia.org/wiki/Crc16) is used.
  
 
 
-##Sample Test Scenarios
+## Sample Test Scenarios
 
 Testing of this application using s/w and h/w serial ports may be performed with sample hardware configurations defined below.
 
 Please note that most of Arduino modules operate on 5V while ESP8266 on 3.3V To make the connection easier  Arduino Pro Mini 3.3V has been used that provides direct compatibility of pin voltage to ESP8266. In other cases a 5V <> 3.3V voltage level shifter should be used or ESP8266 may be damaged if connected directly to 5V Arduino pins. 
 
 
-###SLIP over S/W Serial - Hardware Set Up
+### SLIP over S/W Serial - Hardware Set Up
 * Arduino Pro Mini 3.3V
 * ESP-12E LoLin V3 with USB by wemos.cc
 * Two USB-UART generic dongles used to
@@ -45,7 +45,7 @@ Arduino  | Ground         | GND     | <> | GND     | Ground         | USB-UART I
 Please refer to folder [documents](documents/) for additional pictures of connections.
 
 
-###SLIP over H/W Serial - Hardware Set Up
+### SLIP over H/W Serial - Hardware Set Up
 * Arduino Pro Mini 3.3V
 * ESP-01 with 3.3V power supply
 * Two USB-UART generic dongles used to
@@ -74,7 +74,7 @@ Please refer to folder [documents](documents/) for additional pictures of connec
 
 
 
-###Software Overview
+### Software Overview
 ESP8255 application should be compiled and loaded to module using provided make file. Use define in file [user_main.c](https://github.com/krzychb/esp-just-slip/blob/master/user/user_main.c) to choose between SLIP over s/w or h/w serial.
 
 ``` c
@@ -113,7 +113,7 @@ The following s/w version have been used when developing and testing of esp-just
 
 
 
-##Software API
+## Software API
 
 The following functions are implemented:
 ```c
@@ -126,7 +126,7 @@ uint8_t ICACHE_FLASH_ATTR appendCrc16(uint8_t *dataBuffer, uint8_t nCount);
 bool ICACHE_FLASH_ATTR checkCrc16(uint8_t *dataBuffer, uint8_t nCount);
 ```
 
-###Read and Decode Data
+### Read and Decode Data
 ```c
 //
 // *softuart - pointer to software UART
@@ -149,7 +149,7 @@ uint8_t ICACHE_FLASH_ATTR slipDecodeSerialUart0(uint8_t *dataBuffer)
 Read SLIP encoded data from UART0 serial port, decode them and store in data buffer.
 
 
-###Encode and Write Data
+### Encode and Write Data
 ```c
 //
 // *softuart - pointer to software UART
@@ -170,7 +170,7 @@ void ICACHE_FLASH_ATTR slipEncodeSerialUart0(uint8_t *dataBuffer, uint8_t nCount
 SLIP encode data taken from data buffer and send the over the UART0 serial port.
 
 
-###Append CRC16 to Data
+### Append CRC16 to Data
 ```c
 //
 // *dataBuffer - pointer to data buffer to calculate and append crc16
@@ -183,7 +183,7 @@ uint8_t ICACHE_FLASH_ATTR appendCrc16(uint8_t *dataBuffer, uint8_t nCount)
 Calculate CRC16 for data contained in data buffer and append result to the end of data buffer
 
 
-###Check Data Integrity
+### Check Data Integrity
 ```c
 //
 // *dataBuffer - pointer to data buffer
@@ -196,7 +196,7 @@ bool ICACHE_FLASH_ATTR checkCrc16(uint8_t *dataBuffer, uint8_t nCount)
 Perform data integrity check by comparing CRC16 calculated for input data against CRC16 received.
 
 
-###Print Data Buffer
+### Print Data Buffer
 ```c
 //
 // *dataBuffer - pointer to data buffer
@@ -208,7 +208,7 @@ Print values from dataBuffer for diagnostic purposes. The last two bytes of data
 
 
 
-##Acknowledgments
+## Acknowledgments
 
 Development of this esp-just-slip was done using the following resources:
 
@@ -219,24 +219,24 @@ Thank you guys for your contribution to ESP8266 community. It is a great pleasur
 
 
 
-##Contributing
+## Contributing
 
 Please report any [issues](https://github.com/krzychb/esp-just-slip/issues) and submit [pull requests](https://github.com/krzychb/esp-just-slip/pulls). Feel free to contribute to the project in any way you like! 
 
 
 
-##Author
+## Author
 
 krzychb
 
 
 
-##Donations
+## Donations
 
 Invite me to freshly squeezed orange juice.
 
 
-##LICENSE - "MIT License"
+## LICENSE - "MIT License"
 
 Copyright (c) 2015 krzychb
 
